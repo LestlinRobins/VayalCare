@@ -93,13 +93,15 @@ const WeatherAlertsScreen: React.FC<WeatherAlertsScreenProps> = ({
         const { latitude, longitude } = position.coords;
 
         // Use Gemini to get comprehensive weather data
-        const weatherPrompt = `You are a weather data API. Provide current weather information and forecast for farming purposes.
-        
-Location: ${latitude}, ${longitude}
+        const weatherPrompt = `You are a weather data API that provides accurate location-based weather information for farming.
+
+Location coordinates: ${latitude}, ${longitude}
+
+IMPORTANT: Use the exact coordinates ${latitude}, ${longitude} to determine the correct location. Do not default to Delhi or any major city unless the coordinates actually point there.
 
 Return a JSON object with exactly this structure (no markdown, just pure JSON):
 {
-  "location": "City, State/Country",
+  "location": "Exact City/Town, State - based on coordinates ${latitude}, ${longitude}",
   "currentWeather": {
     "temperature": number (in Celsius),
     "humidity": number (percentage),
@@ -135,12 +137,12 @@ Return a JSON object with exactly this structure (no markdown, just pure JSON):
   ]
 }
 
-Base the weather on current conditions for coordinates ${latitude}, ${longitude}. Make alerts and advisories relevant to farming activities. Include realistic temperature ranges and weather patterns for the location.`;
+Base the weather data on the ACTUAL geographic location for coordinates ${latitude}, ${longitude}. Make the location name accurate for these specific coordinates - do not use Delhi, Mumbai, or other major cities unless the coordinates actually point there. Include realistic temperature ranges and weather patterns for the specific region where these coordinates are located.`;
 
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
         const response = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemma-3n-e2b-it:generateContent",
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
           {
             method: "POST",
             headers: {
@@ -178,9 +180,16 @@ Base the weather on current conditions for coordinates ${latitude}, ${longitude}
             weatherData.location ||
               `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
           );
-          setCurrentWeather(weatherData.currentWeather);
-          setAlerts(weatherData.alerts);
-          setWeeklyForecast(weatherData.weeklyForecast);
+
+          if (weatherData.currentWeather) {
+            setCurrentWeather(weatherData.currentWeather);
+          }
+          if (weatherData.alerts) {
+            setAlerts(weatherData.alerts);
+          }
+          if (weatherData.weeklyForecast) {
+            setWeeklyForecast(weatherData.weeklyForecast);
+          }
         } else {
           throw new Error("Invalid weather data format");
         }
