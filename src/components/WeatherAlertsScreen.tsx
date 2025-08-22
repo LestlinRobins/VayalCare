@@ -91,17 +91,67 @@ const WeatherAlertsScreen: React.FC<WeatherAlertsScreenProps> = ({
         );
 
         const { latitude, longitude } = position.coords;
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+        // Convert coordinates to actual location name using Gemini
+        let actualLocation = "";
+        try {
+          const locationPrompt = `Convert these GPS coordinates to a specific location name: ${latitude}, ${longitude}
+          
+          Return only the location in this exact format: "City, State, Country" or "Town, State, Country"
+          Be very specific and accurate for these exact coordinates. Use the actual town/city name, not major cities unless the coordinates actually point there.
+          
+          Examples:
+          - If coordinates point to a small town, use the town name
+          - If coordinates point to a rural area, use the nearest town/village name
+          - Include the correct state/province and country
+          
+          Just return the location name, nothing else.`;
+
+          const locationResponse = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-goog-api-key": apiKey,
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [{ text: locationPrompt }],
+                  },
+                ],
+              }),
+            }
+          );
+
+          if (locationResponse.ok) {
+            const locationData = await locationResponse.json();
+            const locationText =
+              locationData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            actualLocation =
+              locationText.trim().replace(/['"]/g, "") ||
+              `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          }
+        } catch (locationError) {
+          console.log("Location detection failed:", locationError);
+          actualLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        }
+
+        console.log("Detected location:", actualLocation);
 
         // Use Gemini to get comprehensive weather data
         const weatherPrompt = `You are a weather data API that provides accurate location-based weather information for farming.
 
-Location coordinates: ${latitude}, ${longitude}
+Location: ${actualLocation}
+Coordinates: ${latitude}, ${longitude}
 
-IMPORTANT: Use the exact coordinates ${latitude}, ${longitude} to determine the correct location. Do not default to Delhi or any major city unless the coordinates actually point there.
+Provide current weather information and 7-day forecast for this specific location: ${actualLocation}
 
 Return a JSON object with exactly this structure (no markdown, just pure JSON):
 {
-  "location": "Exact City/Town, State - based on coordinates ${latitude}, ${longitude}",
+  "location": "${actualLocation}",
   "currentWeather": {
     "temperature": number (in Celsius),
     "humidity": number (percentage),
@@ -113,7 +163,7 @@ Return a JSON object with exactly this structure (no markdown, just pure JSON):
     {
       "type": "warning|advisory|info",
       "title": "Alert Title",
-      "message": "Short Farm-relevant alert message",
+      "message": "Short Farm-relevant alert message for ${actualLocation}",
       "time": "X hours/days ago",
       "severity": "High|Medium|Low"
     }
@@ -131,15 +181,13 @@ Return a JSON object with exactly this structure (no markdown, just pure JSON):
     {
       "category": "Irrigation|Crop Protection|Harvesting",
       "title": "Advisory Title",
-      "message": "Specific farming advice",
+      "message": "Specific farming advice for ${actualLocation}",
       "priority": "high|medium|low"
     }
   ]
 }
 
-Base the weather data on the ACTUAL geographic location for coordinates ${latitude}, ${longitude}. Make the location name accurate for these specific coordinates - do not use Delhi, Mumbai, or other major cities unless the coordinates actually point there. Include realistic temperature ranges and weather patterns for the specific region where these coordinates are located.`;
-
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+Base the weather data on the current conditions for ${actualLocation}. Make alerts and advisories relevant to farming activities in this specific region. Include realistic temperature ranges and weather patterns typical for ${actualLocation} and its climate zone.`;
 
         const response = await fetch(
           "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
@@ -176,8 +224,10 @@ Base the weather data on the ACTUAL geographic location for coordinates ${latitu
         if (jsonMatch) {
           const weatherData = JSON.parse(jsonMatch[0]);
 
+          // Use the actual location we detected, fallback to API response, then coordinates
           setLocation(
-            weatherData.location ||
+            actualLocation ||
+              weatherData.location ||
               `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
           );
 
@@ -191,6 +241,10 @@ Base the weather data on the ACTUAL geographic location for coordinates ${latitu
             setWeeklyForecast(weatherData.weeklyForecast);
           }
         } else {
+          // If JSON parsing fails, still set the detected location
+          setLocation(
+            actualLocation || `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
+          );
           throw new Error("Invalid weather data format");
         }
       } catch (err) {
