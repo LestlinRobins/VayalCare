@@ -67,6 +67,37 @@ const WeatherAlertsScreen: React.FC<WeatherAlertsScreenProps> = ({
     { day: "Sun", condition: "Cloudy", high: 27, low: 22, rain: 40 },
   ]);
 
+  // Function to get address from coordinates using Nominatim
+  const getAddressFromCoords = async (
+    lat: number,
+    lng: number
+  ): Promise<string> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      );
+      const data = await response.json();
+      return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (error) {
+      console.log("Nominatim geocoding failed:", error);
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  };
+
+  // Function to truncate address for display
+  const getTruncatedLocation = (fullAddress: string): string => {
+    // Split by both commas and spaces to get individual words
+    const words = fullAddress.split(/[,\s]+/).filter((word) => word.length > 0);
+
+    // Show only first two words followed by "..."
+    if (words.length > 4) {
+      return `${words[0]} ${words[1]} ${words[2]} ${words[3]}...`;
+    }
+
+    // If 2 or fewer words, return as is
+    return words.join(" ");
+  };
+
   // Get user location and fetch weather data
   useEffect(() => {
     const fetchWeatherData = async () => {
@@ -93,59 +124,14 @@ const WeatherAlertsScreen: React.FC<WeatherAlertsScreenProps> = ({
         const { latitude, longitude } = position.coords;
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-        // Convert coordinates to actual location name using Gemini
-        let actualLocation = "";
-        try {
-          const locationPrompt = `Convert these GPS coordinates to a specific location name: ${latitude}, ${longitude}
-          
-          Return only the location in this exact format: "City, State, Country" or "Town, State, Country"
-          Be very specific and accurate for these exact coordinates. Use the actual town/city name, not major cities unless the coordinates actually point there.
-          
-          Examples:
-          - If coordinates point to a small town, use the town name
-          - If coordinates point to a rural area, use the nearest town/village name
-          - Include the correct state/province and country
-          
-          Just return the location name, nothing else.`;
-
-          const locationResponse = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-goog-api-key": apiKey,
-              },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [{ text: locationPrompt }],
-                  },
-                ],
-              }),
-            }
-          );
-
-          if (locationResponse.ok) {
-            const locationData = await locationResponse.json();
-            const locationText =
-              locationData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            actualLocation =
-              locationText.trim().replace(/['"]/g, "") ||
-              `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-          }
-        } catch (locationError) {
-          console.log("Location detection failed:", locationError);
-          actualLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        }
-
+        // Get actual address from coordinates using Nominatim
+        const actualLocation = await getAddressFromCoords(latitude, longitude);
         console.log("Detected location:", actualLocation);
 
         // Use Gemini to get comprehensive weather data
         const weatherPrompt = `You are a weather data API that provides accurate location-based weather information for farming.
 
 Location: ${actualLocation}
-Coordinates: ${latitude}, ${longitude}
 
 Provide current weather information and 7-day forecast for this specific location: ${actualLocation}
 
@@ -224,12 +210,8 @@ Base the weather data on the current conditions for ${actualLocation}. Make aler
         if (jsonMatch) {
           const weatherData = JSON.parse(jsonMatch[0]);
 
-          // Use the actual location we detected, fallback to API response, then coordinates
-          setLocation(
-            actualLocation ||
-              weatherData.location ||
-              `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
-          );
+          // Set the location from Nominatim (actualLocation)
+          setLocation(actualLocation);
 
           if (weatherData.currentWeather) {
             setCurrentWeather(weatherData.currentWeather);
@@ -242,9 +224,7 @@ Base the weather data on the current conditions for ${actualLocation}. Make aler
           }
         } else {
           // If JSON parsing fails, still set the detected location
-          setLocation(
-            actualLocation || `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
-          );
+          setLocation(actualLocation);
           throw new Error("Invalid weather data format");
         }
       } catch (err) {
@@ -311,7 +291,7 @@ Base the weather data on the current conditions for ${actualLocation}. Make aler
                   Getting location...
                 </div>
               ) : (
-                <span>{location}</span>
+                <span title={location}>{getTruncatedLocation(location)}</span>
               )}
             </div>
           </div>
