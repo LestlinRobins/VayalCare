@@ -15,7 +15,7 @@ export const KNOWN_FEATURE_IDS = [
   "home",
   "twin",
   "chatbot",
-  "alerts",
+  "notifications",
   "profile",
   "diagnose",
   "market",
@@ -385,7 +385,7 @@ export const FEATURE_KB: Array<{
     navigatesTo: "schemes",
   },
   {
-    id: "alerts",
+    id: "notifications",
     title: "Alerts",
     description: "All notifications and alerts related to your farm.",
     examples: [
@@ -395,7 +395,7 @@ export const FEATURE_KB: Array<{
       "അറിയിപ്പുകൾ കാണിക്കുക",
     ],
     synonyms: ["notification", "alert", "അറിയിപ്പ്", "അലാറം"],
-    navigatesTo: "alerts",
+    navigatesTo: "notifications",
   },
   {
     id: "profile",
@@ -793,7 +793,7 @@ export function offlineMatch(queryRaw: string): VoiceDecision {
     },
     {
       keys: ["alert", "notification", "അലാറം", "അറിയിപ്പ്"],
-      target: "alerts",
+      target: "notifications",
     },
     {
       keys: [
