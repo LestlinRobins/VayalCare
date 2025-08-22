@@ -386,7 +386,7 @@ export const FEATURE_KB: Array<{
   },
   {
     id: "notifications",
-    title: "Alerts",
+    title: "Notifications",
     description: "All notifications and alerts related to your farm.",
     examples: [
       "open alerts",

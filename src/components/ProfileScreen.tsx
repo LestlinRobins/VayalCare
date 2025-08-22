@@ -16,9 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "../contexts/ThemeContext";
+import { useTranslation } from "../contexts/TranslationContext";
 
-const ProfileScreen = () => {
+interface ProfileScreenProps {
+  onBack?: () => void;
+}
+
+const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
 
   const farmerData = {
     name: "Ramesh Kumar",
@@ -34,35 +40,35 @@ const ProfileScreen = () => {
   const menuItems = [
     {
       id: "edit-profile",
-      title: "Edit Profile",
+      title: t("Edit Profile"),
       subtitle: "Update personal information",
       icon: Edit,
       color: "text-blue-600 dark:text-blue-400",
     },
     {
       id: "language",
-      title: "Language Settings",
+      title: t("Language Settings"),
       subtitle: "Change app language",
       icon: Globe,
       color: "text-green-600 dark:text-green-400",
     },
     {
       id: "voice-settings",
-      title: "Voice Assistant",
+      title: t("Voice Assistant"),
       subtitle: "Configure voice settings",
       icon: Settings,
       color: "text-purple-600 dark:text-purple-400",
     },
     {
       id: "privacy",
-      title: "Data Privacy",
+      title: t("Data Privacy"),
       subtitle: "Privacy & export settings",
       icon: Settings,
       color: "text-orange-600 dark:text-orange-400",
     },
     {
       id: "help",
-      title: "Help & Support",
+      title: t("Help & Support"),
       subtitle: "Get help and contact support",
       icon: HelpCircle,
       color: "text-blue-600 dark:text-blue-400",
@@ -72,11 +78,25 @@ const ProfileScreen = () => {
   return (
     <div className="pb-20 bg-gray-50 dark:bg-background min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white p-4 shadow-lg">
-        <h1 className="text-xl font-bold">Profile</h1>
-        <p className="text-green-100 dark:text-green-200 text-sm">
-          Manage your account and preferences
-        </p>
+      <div className="bg-background border-b border-border p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">{t("profile")}</h1>
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -138,7 +158,7 @@ const ProfileScreen = () => {
         <Card className="dark:bg-card dark:border-border shadow-sm dark:shadow-lg transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-base text-foreground">
-              Farm Information
+              {t("Farm Information")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -183,7 +203,7 @@ const ProfileScreen = () => {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-800 dark:text-foreground">
-                    Dark Mode
+                    {t("Dark Mode")}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-muted-foreground">
                     Switch between light and dark theme
@@ -250,7 +270,7 @@ const ProfileScreen = () => {
           className="w-full border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300"
         >
           <LogOut className="h-4 w-4 mr-2" />
-          Logout
+          {t("Logout")}
         </Button>
 
         {/* App Version */}
