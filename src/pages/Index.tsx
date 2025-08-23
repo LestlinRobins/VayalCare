@@ -11,15 +11,18 @@ import CropPlannerScreen from "../components/CropPlannerScreen";
 import WeatherAlertsScreen from "../components/WeatherAlertsScreen";
 import FarmerForumScreen from "../components/FarmerForumScreen";
 import KnowledgeCenterScreen from "../components/KnowledgeCenterScreen";
+import KnowledgeScreen from "../components/KnowledgeScreen";
 import BuyInputsScreen from "../components/BuyInputsScreen";
 import ScanPestScreen from "../components/ScanPestScreen";
 import ExpenseTrackerScreen from "../components/ExpenseTrackerScreen";
 import AgricultureNewsScreen from "../components/AgricultureNewsScreen";
 import GovtSchemesScreen from "../components/GovtSchemesScreen";
+import LabourerHub from "../components/LabourerHub";
+import FairFarm from "../components/FairFarm";
 import BottomNavigation from "../components/BottomNavigation";
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Temporarily set to true for local testing
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Temporarily set to true for local testing
   const [activeTab, setActiveTab] = useState("home");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [initialChatQuestion, setInitialChatQuestion] = useState<string | null>(
@@ -62,6 +65,11 @@ const Index = () => {
               setActiveTab("home");
               setInitialChatQuestion(null);
             }}
+            onFeatureClick={(id) => {
+              // Reset any pending chat question unless staying in chatbot
+              if (id !== "chatbot") setInitialChatQuestion(null);
+              setActiveTab(id);
+            }}
           />
         );
       case "notifications":
@@ -86,12 +94,7 @@ const Index = () => {
           />
         );
       case "knowledge":
-        return (
-          <KnowledgeCenterScreen
-            onBack={() => setActiveTab("resources")}
-            onFeatureClick={setActiveTab}
-          />
-        );
+        return <KnowledgeScreen onBack={() => setActiveTab("resources")} />;
       case "buy":
         return <BuyInputsScreen onBack={() => setActiveTab("resources")} />;
       case "scan":
@@ -106,6 +109,10 @@ const Index = () => {
         );
       case "schemes":
         return <GovtSchemesScreen onBack={() => setActiveTab("resources")} />;
+      case "labourers":
+        return <LabourerHub onBack={() => setActiveTab("resources")} />;
+      case "fairfarm":
+        return <FairFarm onBack={() => setActiveTab("home")} />;
       default:
         return (
           <HomeScreen
@@ -117,14 +124,14 @@ const Index = () => {
   };
 
   // Temporarily commented out for local testing
-  // if (!isLoggedIn) {
-  //   return (
-  //     <LoginPage
-  //       onLogin={handleLogin}
-  //       onLanguageChange={handleLanguageChange}
-  //     />
-  //   );
-  // }
+  if (!isLoggedIn) {
+    return (
+      <LoginPage
+        onLogin={handleLogin}
+        onLanguageChange={handleLanguageChange}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
